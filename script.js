@@ -1,70 +1,50 @@
-const video = document.getElementById('video');
-const play = document.getElementById('play');
-const stop = document.getElementById('stop');
-const progress = document.getElementById('progress');
-const timestamp = document.getElementById('timestamp');
+const player = document.querySelector('.player');
+const video = player.querySelector('.viewer');
+const progress = player.querySelector('.progress');
+const progressBar = player.querySelector('.progress__filled');
+const toggle = player.querySelector('.toggle');
+const skipButtons = player.querySelectorAll('[data-skip]');
+const ranges = player.querySelectorAll('.player__slider');
 
-
-// play and pause 
-function toggleVideoStatus() {
-    if(video.paused) {
-        video.play();
-    } else {
-        video.pause();
-    }
+function togglePlay() {
+  const method = video.paused ? 'play' : 'pause';
+  video[method]();
 }
 
-//update play and pause icon 
-function updatePlayIcon() {
-    if(video.paused){
-        play.innerHTML = '<i class ="fa fa-play fa-2x"></i>';
-    } else {
-        play.innerHTML = '<i class ="fa fa-pause fa-2x"></i>';
-    }
+function updateButton() {
+  const icon = this.paused ? '►' : '❚ ❚';
+  toggle.textContent = icon;
 }
 
-//update progress and timestamp 
-function updateProgress() {
-    progress.value = (video.currentTime / video.duration) * 100;
-
-    // get minutes 
-    let mins = Math.floor(video.currentTime / 60);
-    if(mins < 10) {
-        mins = '0' + String(mins);
-    }
-
-    // get seconds 
-    let secs = Math.floor(video.currentTime % 60);
-    if(secs < 10) {
-        secs = '0' + String(secs);
-    }
-
-    timestamp.innerHTML = `${mins}:${secs}`;
-
-
+function skip() {
+  video.currentTime += parseFloat(this.dataset.skip);
 }
 
-// set video frame and time to progress selection 
-function setVideoProgress() {
-    video.currentTime = (+progress.value * video.duration) / 100;
+function handleRangeUpdate() {
+  video[this.name] = this.value;
 }
 
-// stop video 
-function stopVideo() {
-    video.currentTime = 0;
-    video.pause();
+function handleProgress() {
+  const percent = (video.currentTime / video.duration) * 100;
+  progressBar.style.flexBasis = `${percent}%`;
 }
 
-// event listeners 
-video.addEventListener('click', toggleVideoStatus);
-video.addEventListener('pause', updatePlayIcon);
-video.addEventListener('play', updatePlayIcon);
-video.addEventListener('timeupdate', updateProgress);
+function scrub(e) {
+  const scrubTime = (e.offsetX /progress.offsetWidth) * video.duration;
+  video.currentTime = scrubTime;
+}
 
-play.addEventListener('click', toggleVideoStatus);
+video.addEventListener('click', togglePlay);
+video.addEventListener('play', updateButton);
+video.addEventListener('pause', updateButton);
+video.addEventListener('timeupdate', handleProgress);
+toggle.addEventListener('click', togglePlay);
+skipButtons.forEach(button => button.addEventListener('click', skip));
+ranges.forEach(range => range.addEventListener('change', handleRangeUpdate));
+ranges.forEach(range => range.addEventListener('mousemove', handleRangeUpdate));
 
-stop.addEventListener('click', stopVideo);
-
-progress.addEventListener('change', setVideoProgress);
-
-
+let mousedown = false;
+progress.addEventListener('click', scrub);
+progress.addEventListener('mousemove', (e) => mousedown && scrub(e));
+progress.addEventListener('mousedown', () => mousedown = true);
+progress.addEventListener('mouseup', () => mousedown = false);
